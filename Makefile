@@ -1,4 +1,4 @@
-HTSLIB_PATH := ./htslib/
+HTSLIB_PATH := /software/UHTS/Analysis/samtools/1.4/include
 
 # C++ Compiler
 CXX=g++
@@ -7,7 +7,7 @@ CXXFLAGS=-O3 -g -Wall -std=c++17 $(INCLUDE_DIRS) $(CXXEXTRAFLAGS)
 # Linker
 LD=g++
 LIBS=-lpthread -lhts
-LDFLAGS=-O3 -L $(HTSLIB_PATH)
+LDFLAGS=-O3 -L $(HTSLIB_PATH)/../lib64/
 # Debugger
 XDB=gdb
 
