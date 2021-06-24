@@ -17,8 +17,13 @@ public:
         app.add_flag("--verify", verify, "DEBUG - verify");
 
         app.add_flag("--iota", iota, "DEBUG - Seed PWBT with natural order");
+        app.add_flag("--no-sort", no_sort, "DEBUG - No PBWT sort");
 
         app.add_flag("--sandbox", sandbox, "DEBUG - ...");
+        app.add_flag("--inject-phase-switches", inject_phase_switches, "DEBUG injects phase switches");
+        app.add_option("--phase-switch-prob", phase_switch_prob, "DEBUG probability for phase switch injection");
+        app.add_flag("--compare-matrices", compare_matrices, "DEBUG compare matrices from two bi-allelic bcf files");
+        app.add_flag("--copy-bcf", copy_bcf, "DEBUG copies a bcf (not useful)");
         app.add_flag("--phase", phase, "DEBUG - phases the file according to PBWT sort");
         app.add_flag("--phase2", phase_2, "DEBUG - phases the file given samples");
         app.add_flag("--het-info", het_info, "DEBUG - displays number of het sites per sample");
@@ -58,9 +63,14 @@ public:
     bool wait = false;
     bool verify = false;
     bool iota = false;
+    bool no_sort = false;
     bool count_xcf = false;
     bool sandbox = false;
+    bool compare_matrices = false;
+    bool copy_bcf = false;
     bool compute_phase_switch_errors = false;
+    bool inject_phase_switches = false;
+    double phase_switch_prob = 0.1;
     bool create_map = false;
     bool phase = false;
     bool phase_2 = false;

@@ -66,6 +66,11 @@ public:
         compressor32b.set_ppa_use(use);
     }
 
+    void set_sort(bool s) {
+        compressor16b.sort = s;
+        compressor32b.sort = s;
+    }
+
 private:
     template<typename T = uint32_t>
     class GtCompressor {
@@ -214,6 +219,7 @@ private:
                 this->ss_rate = ARRANGEMENT_SAMPLE_RATE;
                 size_t wah_words = 0;
                 size_t rare_wah_words = 0;
+                size_t rare_sparse_cost = 0;
                 size_t common_wah_words = 0;
                 wahs.clear();
                 rearrangement_track.clear();
@@ -221,6 +227,8 @@ private:
 
                 size_t rephase_counter = 0;
                 has_missing_in_file = false;
+
+                if (!sort) { use_ppas = false; }
 
                 //std::cout << "het counts : ";
                 // While the BCF has lines
@@ -288,6 +296,7 @@ private:
                         if (minor_allele_count > MINOR_ALLELE_COUNT_THRESHOLD) {
                             common_wah_words += wahs.back().size();
                         } else {
+                            rare_sparse_cost += minor_allele_count;
                             rare_wah_words += wahs.back().size();
                         }
 
@@ -301,7 +310,7 @@ private:
                         }
 
                         // Only sort if minor allele count is high enough (better compression, faster)
-                        if (minor_allele_count > MINOR_ALLELE_COUNT_THRESHOLD) {
+                        if (sort and (minor_allele_count > MINOR_ALLELE_COUNT_THRESHOLD)) {
                             // Indicate that the current position has a rearrangement
                             rearrangement_track[variant_counter] = true;
 
@@ -348,6 +357,7 @@ private:
                 // samples x 2 x variants bits
                 size_t raw_size = bcf_fri.n_samples * 2 * variant_counter / (8 * 1024 * 1024);
                 std::cout << "GT Matrix bits : " << bcf_fri.n_samples * 2 * variant_counter << std::endl;
+                std::cout << "Rare minor bits : " << rare_sparse_cost << std::endl;
                 std::cout << "RAW size (GT bits, not input file) : " << raw_size << " MBytes" << std::endl;
                 size_t compressed_size = wah_words * sizeof(uint16_t) / (1024 * 1024);
                 std::cout << "Compressed size : " << compressed_size << " MBytes" << std::endl;
@@ -400,7 +410,8 @@ private:
                 .data_chksum = 0 /* TODO */,
                 .header_chksum = 0 /* TODO */
             };
-            header.iota_ppa = !use_ppas,
+            header.iota_ppa = !use_ppas;
+            header.no_sort = !sort;
             s.write(reinterpret_cast<const char*>(&header), sizeof(header_t));
 
             size_t written_bytes = 0;
@@ -484,6 +495,7 @@ private:
         const size_t REARRANGEMENT_TRACK_CHUNK = 1024; // Should be a power of two
 
         bool use_ppas = true;
+        bool sort = true;
 
         std::vector<std::vector<uint16_t> > wahs;
         std::vector<std::vector<uint16_t> > missing_wahs;
