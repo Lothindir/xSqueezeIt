@@ -52,7 +52,8 @@ struct header_s {
             bool has_missing : 1;     // The input file had missing data
             bool non_uniform_phasing : 1; // The input file has phased / unphased mixed data
             bool default_phased : 1;
-            uint8_t rsvd__1 : 5;
+            bool mixed_ploidy : 1;
+            uint8_t rsvd__1 : 4;
         };
     };
     union {
@@ -88,7 +89,8 @@ struct header_s {
     uint32_t rare_threshold = 0;      // Threshold for the rearrangement track / sorting / wah vs sparse
     uint64_t xcf_entries = 0;         // Num entries in the BCF file (may be less than num_variants if multi-allelic)
     uint32_t phase_info_offset = 0;
-    uint8_t rsvd_3[112] = {0,};
+    uint32_t eov_info_offset = 0;
+    uint8_t rsvd_3[108] = {0,};
 
     // 32 bytes
     uint32_t rsvd_4[3] = {0,};

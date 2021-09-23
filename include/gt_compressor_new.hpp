@@ -87,9 +87,10 @@ private:
                 if (bcf_gt_is_missing(bcf_allele) or (bcf_allele == bcf_int32_missing)) {
                     sparse_missing.push_back(index);
                 } else if (bcf_allele == bcf_int32_vector_end) {
-                    std::cerr << "End of vector index : " << index << std::endl;
-                    std::cerr << "Mixed ploidy is not supported yet" << std::endl;
-                    throw "PLOIDY ERROR";
+                    //std::cerr << "End of vector index : " << index << std::endl;
+                    //std::cerr << "Mixed ploidy is not supported yet" << std::endl;
+                    //throw "PLOIDY ERROR";
+                    sparse_end_of_vec.push_back(index);
                 } else {
                     try {
                         allele_counts.at(bcf_gt_allele(bcf_allele))++;
@@ -147,6 +148,7 @@ public:
     std::vector<std::vector<uint16_t> > wahs;
     std::vector<SparseGtLine<T> > sparse_lines;
     std::vector<T> sparse_missing;
+    std::vector<T> sparse_end_of_vec;
     std::vector<T> sparse_non_default_phasing;
 };
 
@@ -216,6 +218,7 @@ public:
         header.iota_ppa = true;
         header.no_sort = false;
         header.rare_threshold = MINOR_ALLELE_COUNT_THRESHOLD;
+        header.mixed_ploidy = false; // default
 
         /////////////////////////////
         // Write Unfinished Header //
@@ -408,6 +411,34 @@ public:
             header.non_uniform_phasing = true;
         }
         header.default_phased = default_phased;
+
+        ///////////////////
+        // End of Vector //
+        ///////////////////
+        header.eov_info_offset = total_bytes;
+        for (const auto& ir : internal_gt_records) {
+            const auto& seov = ir.sparse_end_of_vec;
+            if (seov.size()) {
+                T qty = seov.size();
+                s.write(reinterpret_cast<const char*>(&bm_counter), sizeof(bm_counter));
+                s.write(reinterpret_cast<const char*>(&qty), sizeof(T));
+                s.write(reinterpret_cast<const char*>(seov.data()), seov.size() * sizeof(decltype(seov.back())));
+                if (DEBUG_COMPRESSION) std::cerr << "DEBUG : End of vector sparse entry at BM " << bm_counter << ", " << qty << " ";
+                if (DEBUG_COMPRESSION) for (auto s : seov) {std::cerr << s << " ";}
+                if (DEBUG_COMPRESSION) std::cerr << std::endl;
+            }
+            // BM index has to be used because of -r option
+            bm_counter += ir.rearrangements.size();
+        }
+
+        written_bytes = size_t(s.tellp()) - total_bytes;
+        total_bytes += written_bytes;
+        if (written_bytes) {
+            std::cout << "end of vector sparse data " << written_bytes << " bytes, " << total_bytes << " total bytes written" << std::endl;
+            header.mixed_ploidy = true;
+        }
+
+        bm_counter = 0;
 
         ///////////////////////////
         // Rewrite Filled Header //
